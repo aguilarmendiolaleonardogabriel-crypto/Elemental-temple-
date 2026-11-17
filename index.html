@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Elemental Temple</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Outfit:wght@400;600;800&display=swap');
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{font-family:'Outfit',system-ui,sans-serif;background:#0f172a;color:#f8fafc;user-select:none;touch-action:manipulation}
+.title-font{font-family:'Fredoka One',cursive}
+#gameCanvas{background:#1e293b;border:4px solid #334155;border-radius:12px;box-shadow:0 20px 25px -5px rgba(0,0,0,.5)}
+</style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-3 md:p-6">
+<header class="text-center mb-4">
+  <h1 class="title-font text-3xl md:text-5xl bg-gradient-to-r from-orange-500 via-amber-400 to-cyan-400 bg-clip-text text-transparent">🔥 Elemental Temple 💧</h1>
+  <span id="levelBadge" class="inline-block mt-1 bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-bold px-3 py-1 rounded-full">Nivel 1 de 2</span>
+</header>
+
+<main class="w-full max-w-5xl flex flex-col items-center gap-4">
+  <div class="w-full bg-slate-800/80 border border-slate-700 rounded-xl p-4 flex flex-wrap gap-4 items-center justify-around">
+    <div class="flex flex-col items-center">
+      <span class="text-xs font-semibold text-slate-300 mb-1"><i class="fa-solid fa-image text-purple-400"></i> Fondo</span>
+      <label class="cursor-pointer bg-purple-600 hover:bg-purple-500 text-xs py-2 px-3 rounded-lg"><i class="fa-solid fa-folder-open"></i> Examinar<input type="file" data-k="bg" accept="image/*" class="hidden"></label>
+      <span data-s="bg" class="text-[10px] text-slate-400 mt-1">Por defecto</span>
+    </div>
+    <div class="flex flex-col items-center">
+      <span class="text-xs font-semibold text-cyan-300 mb-1"><i class="fa-solid fa-droplet"></i> Agua</span>
+      <label class="cursor-pointer bg-cyan-600 hover:bg-cyan-500 text-xs py-2 px-3 rounded-lg"><i class="fa-solid fa-folder-open"></i> Examinar<input type="file" data-k="water" accept="image/*" class="hidden"></label>
+      <span data-s="water" class="text-[10px] text-slate-400 mt-1">Por defecto</span>
+    </div>
+    <div class="flex flex-col items-center">
+      <span class="text-xs font-semibold text-orange-300 mb-1"><i class="fa-solid fa-fire"></i> Fuego</span>
+      <label class="cursor-pointer bg-orange-600 hover:bg-orange-500 text-xs py-2 px-3 rounded-lg"><i class="fa-solid fa-folder-open"></i> Examinar<input type="file" data-k="fire" accept="image/*" class="hidden"></label>
+      <span data-s="fire" class="text-[10px] text-slate-400 mt-1">Por defecto</span>
+    </div>
+    <div class="flex flex-col items-center">
+      <span class="text-xs font-semibold text-orange-300 mb-1">🔥 Chico Fuego</span>
+      <label class="cursor-pointer bg-orange-700 hover:bg-orange-600 text-xs py-2 px-3 rounded-lg"><i class="fa-solid fa-folder-open"></i> Examinar<input type="file" data-k="fireChar" accept="image/*" class="hidden"></label>
+      <span data-s="fireChar" class="text-[10px] text-slate-400 mt-1">Por defecto</span>
+    </div>
+    <div class="flex flex-col items-center">
+      <span class="text-xs font-semibold text-cyan-300 mb-1">💧 Chica Agua</span>
+      <label class="cursor-pointer bg-cyan-700 hover:bg-cyan-600 text-xs py-2 px-3 rounded-lg"><i class="fa-solid fa-folder-open"></i> Examinar<input type="file" data-k="waterChar" accept="image/*" class="hidden"></label>
+      <span data-s="waterChar" class="text-[10px] text-slate-400 mt-1">Por defecto</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="resetBtn" class="bg-rose-600 hover:bg-rose-500 text-xs py-2 px-4 rounded-lg font-semibold"><i class="fa-solid fa-rotate-right"></i> Reiniciar</button>
+      <button id="clearBtn" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs py-2 px-3 rounded-lg"><i class="fa-solid fa-trash-can"></i> Limpiar</button>
+    </div>
+  </div>
+
+  <div class="relative w-full aspect-[16/9] max-h-[600px] flex justify-center items-center">
+    <canvas id="gameCanvas" width="960" height="540" class="w-full h-full object-contain"></canvas>
+    <div id="gameOverlay" class="hidden absolute inset-0 bg-slate-950/80 rounded-xl flex flex-col justify-center items-center text-center p-6 z-20">
+      <h2 id="overlayTitle" class="title-font text-4xl md:text-6xl text-amber-400 mb-2"></h2>
+      <p id="overlaySub" class="text-slate-300 mb-6"></p>
+      <button id="overlayBtn" class="bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-bold px-6 py-3 rounded-xl"></button>
+    </div>
+  </div>
+
+  <div class="w-full grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+    <div class="bg-orange-950/30 border border-orange-500/30 rounded-xl p-3 flex items-center justify-between">
+      <div><h4 class="font-bold text-orange-400">Chico Fuego</h4><p class="text-slate-400 text-xs">Pasa Fuego y no toca Agua ni Ácido</p></div>
+      <span class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-orange-300 text-xs">▲ Saltar · ◄ ► Mover</span>
+    </div>
+    <div class="bg-cyan-950/30 border border-cyan-500/30 rounded-xl p-3 flex items-center justify-between">
+      <div><h4 class="font-bold text-cyan-400">Chica Agua</h4><p class="text-slate-400 text-xs">Pasa Agua y no toca Fuego ni Ácido</p></div>
+      <span class="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-cyan-300 text-xs">W Saltar · A D Mover</span>
+    </div>
+  </div>
+</main>
+
+<script>
+window.onload = function () {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const gameOverlay = $('gameOverlay'), overlayTitle = $('overlayTitle'), overlaySub = $('overlaySub'), overlayBtn = $('overlayBtn'), levelBadge = $('levelBadge');
+
+  // Texturas personalizadas: bg, water, fire (patrones) y fireChar, waterChar (personajes)
+  const tex = { bg: null, water: null, fire: null, fireChar: null, waterChar: null };
+  const pat = { bg: null, water: null, fire: null };
+  const labelColor = { bg: 'text-purple-400', water: 'text-cyan-400', fire: 'text-orange-400', fireChar: 'text-orange-400', waterChar: 'text-cyan-400' };
+
+  let gameState = 'PLAYING', currentLevelIndex = 0;
+  const keys = {};
+  window.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) e.preventDefault();
+  });
+  window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+  const levels = [
+    {
+      platforms: [
+        { x: 0, y: 500, width: 960, height: 40 },
+        { x: 0, y: 390, width: 300, height: 20 },
+        { x: 340, y: 410, width: 280, height: 20 },
+        { x: 660, y: 390, width: 300, height: 20 },
+        { x: 100, y: 280, width: 240, height: 20 },
+        { x: 620, y: 280, width: 240, height: 20 },
+        { x: 380, y: 250, width: 200, height: 20 },
+        { x: 0, y: 140, width: 380, height: 20 },
+        { x: 580, y: 140, width: 380, height: 20 }
+      ],
+      pools: [
+        { x: 120, y: 490, width: 140, height: 12, type: 'fire' },
+        { x: 410, y: 400, width: 140, height: 12, type: 'acid' },
+        { x: 700, y: 490, width: 140, height: 12, type: 'water' },
+        { x: 150, y: 270, width: 120, height: 12, type: 'water' },
+        { x: 670, y: 270, width: 120, height: 12, type: 'fire' }
+      ],
+      doors: { fire: { x: 80, y: 70, width: 50, height: 70 }, water: { x: 830, y: 70, width: 50, height: 70 } },
+      spawn: { fire: { x: 60, y: 440 }, water: { x: 860, y: 440 } }
+    },
+    {
+      platforms: [
+        { x: 0, y: 500, width: 960, height: 40 },
+        { x: 120, y: 410, width: 200, height: 20 },
+        { x: 640, y: 410, width: 200, height: 20 },
+        { x: 360, y: 330, width: 240, height: 20 },
+        { x: 80, y: 240, width: 220, height: 20 },
+        { x: 660, y: 240, width: 220, height: 20 },
+        { x: 340, y: 150, width: 280, height: 20 }
+      ],
+      pools: [
+        { x: 220, y: 490, width: 160, height: 12, type: 'water' },
+        { x: 580, y: 490, width: 160, height: 12, type: 'fire' },
+        { x: 410, y: 320, width: 140, height: 12, type: 'acid' },
+        { x: 120, y: 230, width: 140, height: 12, type: 'fire' },
+        { x: 700, y: 230, width: 140, height: 12, type: 'water' }
+      ],
+      doors: { fire: { x: 400, y: 80, width: 50, height: 70 }, water: { x: 510, y: 80, width: 50, height: 70 } },
+      spawn: { fire: { x: 40, y: 440 }, water: { x: 880, y: 440 } }
+    }
+  ];
+
+  const live = {}; // imágenes (GIF) mantenidas en el DOM para que el navegador las anime
+  const dims = t => [t.naturalWidth || t.width, t.naturalHeight || t.height];
+
+  // Decodificador de GIF animado: separa los cuadros para dibujarlos uno a uno en el canvas
+  function lzw(min, data, len) {
+    const out = new Uint8Array(len), clear = 1 << min, eoi = clear + 1;
+    const prefix = new Uint16Array(4096), suffix = new Uint8Array(4096), stack = new Uint8Array(4097);
+    for (let i = 0; i < clear; i++) suffix[i] = i;
+    let size = min + 1, next = eoi + 1, mask = (1 << size) - 1, old = -1, first = 0, bits = 0, acc = 0, pos = 0, op = 0;
+    while (op < len) {
+      while (bits < size) { if (pos >= data.length) return out; acc |= data[pos++] << bits; bits += 8; }
+      const code = acc & mask; acc >>= size; bits -= size;
+      if (code === clear) { size = min + 1; next = eoi + 1; mask = (1 << size) - 1; old = -1; continue; }
+      if (code === eoi) break;
+      if (old === -1) { out[op++] = suffix[code]; old = code; first = code; continue; }
+      let sp = 0, c = code;
+      if (code >= next) { stack[sp++] = first; c = old; }
+      while (c >= clear) { stack[sp++] = suffix[c]; c = prefix[c]; }
+      first = suffix[c]; stack[sp++] = first;
+      while (sp > 0 && op < len) out[op++] = stack[--sp];
+      if (next < 4096) {
+        prefix[next] = old; suffix[next] = first; next++;
+        if (next === (1 << size) && size < 12) { size++; mask = (1 << size) - 1; }
+      }
+      old = code;
+    }
+    return out;
+  }
+
+  function decodeGif(buf) {
+    const d = new Uint8Array(buf);
+    if (d[0] !== 0x47 || d[1] !== 0x49 || d[2] !== 0x46) throw new Error('no gif');
+    let p = 6;
+    const W = d[p] | d[p + 1] << 8, H = d[p + 2] | d[p + 3] << 8, fl = d[p + 4]; p += 7;
+    let gct = null;
+    if (fl & 0x80) { const gl = 3 * (2 << (fl & 7)); gct = d.subarray(p, p + gl); p += gl; }
+    const comp = document.createElement('canvas'); comp.width = W; comp.height = H;
+    const cc = comp.getContext('2d'), frames = [];
+    let gce = { disp: 0, trans: -1, delay: 100 }, pd = null;
+    while (p < d.length) {
+      const b = d[p++];
+      if (b === 0x3B) break;
+      if (b === 0x21) {
+        const lab = d[p++];
+        if (lab === 0xF9) gce = { disp: (d[p + 1] >> 2) & 7, trans: (d[p + 1] & 1) ? d[p + 4] : -1, delay: ((d[p + 2] | d[p + 3] << 8) * 10) || 100 };
+        let n; while ((n = d[p++])) p += n;
+      } else if (b === 0x2C) {
+        const fx = d[p] | d[p + 1] << 8, fy = d[p + 2] | d[p + 3] << 8, fw = d[p + 4] | d[p + 5] << 8, fh = d[p + 6] | d[p + 7] << 8, lf = d[p + 8]; p += 9;
+        let ct = gct;
+        if (lf & 0x80) { const cl = 3 * (2 << (lf & 7)); ct = d.subarray(p, p + cl); p += cl; }
+        const mc = d[p++], chunks = []; let sz, tot = 0;
+        while ((sz = d[p++])) { chunks.push(d.subarray(p, p + sz)); p += sz; tot += sz; }
+        const data = new Uint8Array(tot); let o = 0;
+        for (const ch of chunks) { data.set(ch, o); o += ch.length; }
+        const idx = lzw(mc, data, fw * fh);
+        if (pd) {
+          if (pd.disp === 2) cc.clearRect(pd.x, pd.y, pd.w, pd.h);
+          else if (pd.disp === 3 && pd.snap) { cc.clearRect(0, 0, W, H); cc.drawImage(pd.snap, 0, 0); }
+        }
+        let snap = null;
+        if (gce.disp === 3) { snap = document.createElement('canvas'); snap.width = W; snap.height = H; snap.getContext('2d').drawImage(comp, 0, 0); }
+        const fc = document.createElement('canvas'); fc.width = fw; fc.height = fh;
+        const fctx = fc.getContext('2d'), im = fctx.createImageData(fw, fh), rows = [];
+        if (lf & 0x40) [[0, 8], [4, 8], [2, 4], [1, 2]].forEach(([s, st]) => { for (let y = s; y < fh; y += st) rows.push(y); });
+        else for (let y = 0; y < fh; y++) rows.push(y);
+        for (let i = 0; i < fh; i++) {
+          for (let x = 0; x < fw; x++) {
+            const c = idx[i * fw + x];
+            if (c === gce.trans || !ct) continue;
+            const q = (rows[i] * fw + x) * 4;
+            im.data[q] = ct[c * 3]; im.data[q + 1] = ct[c * 3 + 1]; im.data[q + 2] = ct[c * 3 + 2]; im.data[q + 3] = 255;
+          }
+        }
+        fctx.putImageData(im, 0, 0); cc.drawImage(fc, fx, fy);
+        const out = document.createElement('canvas'); out.width = W; out.height = H;
+        out.getContext('2d').drawImage(comp, 0, 0);
+        frames.push({ canvas: out, delay: gce.delay });
+        pd = { disp: gce.disp, x: fx, y: fy, w: fw, h: fh, snap };
+        gce = { disp: 0, trans: -1, delay: 100 };
+      } else break;
+    }
+    if (!frames.length) throw new Error('empty');
+    return { frames, width: W, height: H, total: frames.reduce((a, f) => a + f.delay, 0), t0: performance.now() };
+  }
+
+  // Devuelve el cuadro actual si la textura es un GIF animado
+  const res = t => {
+    if (!t || !t.frames) return t;
+    let e = (performance.now() - t.t0) % t.total;
+    for (const f of t.frames) { if (e < f.delay) return f.canvas; e -= f.delay; }
+    return t.frames[0].canvas;
+  };
+
+  function overlap(a, b) {
+    return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+  }
+
+  class Player {
+    constructor(x, y, color, type) {
+      this.startX = x; this.startY = y;
+      this.x = x; this.y = y;
+      this.width = 28; this.height = 42;
+      this.vx = 0; this.vy = 0;
+      this.speed = 4.5;
+      this.jumpForce = -12.5;
+      this.isGrounded = false;
+      this.color = color; this.type = type;
+      this.animFrame = 0;
+    }
+
+    reset(spawnX, spawnY) {
+      this.startX = spawnX || this.startX;
+      this.startY = spawnY || this.startY;
+      this.x = this.startX; this.y = this.startY;
+      this.vx = 0; this.vy = 0;
+      this.isGrounded = false;
+    }
+
+    update() {
+      this.vy += 0.5; // Gravedad
+      if (this.vy > 12) this.vy = 12; // Velocidad terminal
+      this.x += this.vx;
+      this.handleCollisionX();
+      this.y += this.vy;
+      this.handleCollisionY();
+      this.x = Math.max(0, Math.min(canvas.width - this.width, this.x));
+      this.vx *= 0.8; // Fricción
+      this.animFrame += 0.15;
+    }
+
+    handleCollisionX() {
+      for (const solid of levels[currentLevelIndex].platforms) {
+        if (!overlap(this, solid)) continue;
+        const pushLeft = (this.x + this.width) - solid.x;
+        const pushRight = (solid.x + solid.width) - this.x;
+        if (this.vx > 0) this.x = solid.x - this.width;
+        else if (this.vx < 0) this.x = solid.x + solid.width;
+        else if (pushLeft < pushRight) this.x = solid.x - this.width;
+        else this.x = solid.x + solid.width;
+        this.vx = 0;
+      }
+    }
+
+    handleCollisionY() {
+      this.isGrounded = false;
+      for (const solid of levels[currentLevelIndex].platforms) {
+        if (!overlap(this, solid)) continue;
+        const landOnTop = (this.y + this.height) - solid.y;
+        const hitFromBelow = (solid.y + solid.height) - this.y;
+        if (landOnTop <= hitFromBelow) {
+          this.y = solid.y - this.height; this.vy = 0; this.isGrounded = true;
+        } else {
+          this.y = solid.y + solid.height; this.vy = 0;
+        }
+      }
+    }
+
+    draw(ctx) {
+      const img = res(tex[this.type + 'Char']); // textura personalizada (si hay)
+      ctx.save();
+      ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+
+      const moving = Math.abs(this.vx) > 0.5;
+      const facing = this.vx > 0.5 ? 1 : this.vx < -0.5 ? -1 : (this.lastFacing || 1);
+      this.lastFacing = facing;
+      const wobble = moving ? Math.sin(this.animFrame * 2) * 0.08 : 0;
+      const bob = moving ? Math.abs(Math.sin(this.animFrame * 2)) * 2 : Math.sin(this.animFrame) * 0.8;
+      ctx.rotate(wobble);
+      ctx.translate(0, -bob);
+
+      const w = this.width, h = this.height;
+      const top = -h / 2, bottom = h / 2;
+
+      // Sombra suave en el suelo
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(0, bottom + 2, w / 2 + 2, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (img) {
+        // ---- TEXTURA PERSONALIZADA: recortada con la forma de llama o gota ----
+        const isFire = this.type === 'fire';
+        const tip = top - (isFire ? 8 + Math.sin(this.animFrame * 3) * 2.5 : 6 + Math.sin(this.animFrame * 3) * 1.5);
+        const bend = top + (isFire ? 6 : 8);
+        ctx.beginPath();
+        ctx.moveTo(0, tip);
+        ctx.bezierCurveTo(w / 2 + 2, bend, w / 2 + 3, bottom - 8, 0, bottom);
+        ctx.bezierCurveTo(-w / 2 - 3, bottom - 8, -w / 2 - 2, bend, 0, tip);
+        ctx.save();
+        ctx.clip();
+        const [iw, ih] = dims(img);
+        const bw = w + 6, bh = bottom - tip;
+        const s = Math.max(bw / iw, bh / ih);
+        ctx.drawImage(img, -iw * s / 2, (tip + bottom) / 2 - ih * s / 2, iw * s, ih * s);
+        ctx.restore();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = isFire ? '#7c2d12' : '#0c4a6e';
+        ctx.stroke();
+      } else if (this.type === 'fire') {
+        // ---- CHICO FUEGO: cuerpo de fuego con lenguas de llama ----
+        const af = this.animFrame;
+        const flick = Math.sin(af * 3) * 2.5;
+        const t1 = Math.sin(af * 3) * 2.5, t2 = Math.cos(af * 4) * 3, t3 = Math.sin(af * 5 + 1) * 2.5;
+        const lean = Math.sin(af * 2) * 1.5;
+
+        ctx.fillStyle = 'rgba(249, 115, 22, 0.25)';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, w / 2 + 5, h / 2 + 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        const grad = ctx.createLinearGradient(0, top - 12, 0, bottom);
+        grad.addColorStop(0, '#fbbf24');
+        grad.addColorStop(0.45, '#f97316');
+        grad.addColorStop(1, '#dc2626');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(0, bottom);
+        ctx.bezierCurveTo(-w / 2 - 4, bottom - 3, -w / 2 - 6, 4, -w / 2 - 1, -4);
+        ctx.quadraticCurveTo(-w / 2 - 2, top + 4, -9, top - 5 + t1);
+        ctx.quadraticCurveTo(-5, top + 4, -3, top + 6);
+        ctx.quadraticCurveTo(-4, top - 6, 1 + lean, top - 14 + t2);
+        ctx.quadraticCurveTo(5, top, 6, top + 7);
+        ctx.quadraticCurveTo(9, top + 2, 11, top - 5 + t3);
+        ctx.quadraticCurveTo(w / 2 + 4, top + 8, w / 2 + 1, -4);
+        ctx.bezierCurveTo(w / 2 + 6, 4, w / 2 + 4, bottom - 3, 0, bottom);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#7c2d12';
+        ctx.stroke();
+
+        // Llamitas laterales
+        ctx.fillStyle = '#fb923c';
+        ctx.beginPath();
+        ctx.moveTo(-w / 2 - 1, top + 14);
+        ctx.quadraticCurveTo(-w / 2 - 8, top + 6 + flick, -w / 2 - 3, top + 3);
+        ctx.quadraticCurveTo(-w / 2 + 2, top + 9, -w / 2 - 1, top + 14);
+        ctx.moveTo(w / 2 + 1, top + 14);
+        ctx.quadraticCurveTo(w / 2 + 8, top + 6 - flick, w / 2 + 3, top + 3);
+        ctx.quadraticCurveTo(w / 2 - 2, top + 9, w / 2 + 1, top + 14);
+        ctx.fill();
+
+        // Núcleo interior brillante
+        ctx.fillStyle = 'rgba(254, 240, 138, 0.85)';
+        ctx.beginPath();
+        ctx.ellipse(0, bottom - 10, 7, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Chispas que suben
+        ctx.fillStyle = '#fde047';
+        for (let k = 0; k < 3; k++) {
+          const sp = (af * 6 + k * 5) % 12;
+          ctx.globalAlpha = 1 - sp / 12;
+          ctx.beginPath();
+          ctx.arc(-8 + k * 8, top - 10 - sp, 1.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        // Cara
+        const ex = facing * 3;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-4 + ex, -6, 4.5, 0, Math.PI * 2);
+        ctx.arc(5 + ex, -6, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(-3 + ex + facing, -6, 2, 0, Math.PI * 2);
+        ctx.arc(6 + ex + facing, -6, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#7c2d12';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(ex + 1, 2, 4, 0.15 * Math.PI, 0.85 * Math.PI);
+        ctx.stroke();
+      } else {
+        // ---- CHICA AGUA: cuerpo de gota ----
+        const ripple = Math.sin(this.animFrame * 3) * 1.5;
+
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.25)';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, w / 2 + 5, h / 2 + 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        const grad = ctx.createLinearGradient(0, top - 8, 0, bottom);
+        grad.addColorStop(0, '#a5f3fc');
+        grad.addColorStop(0.45, '#06b6d4');
+        grad.addColorStop(1, '#0369a1');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(0, top - 6 - ripple);
+        ctx.bezierCurveTo(w / 2 + 2, top + 8, w / 2 + 3, bottom - 8, 0, bottom);
+        ctx.bezierCurveTo(-w / 2 - 3, bottom - 8, -w / 2 - 2, top + 8, 0, top - 6 - ripple);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#0c4a6e';
+        ctx.stroke();
+
+        // Reflejo de luz
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.beginPath();
+        ctx.ellipse(-5, top + 14, 3.5, 6, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Burbujas flotando
+        ctx.fillStyle = 'rgba(224, 242, 254, 0.8)';
+        const bub = (this.animFrame * 8) % 14;
+        ctx.beginPath();
+        ctx.arc(w / 2 + 4, top + 10 - bub, 2.2, 0, Math.PI * 2);
+        ctx.arc(-w / 2 - 4, top + 16 - bub, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cara
+        const ex = facing * 3;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-4 + ex, -6, 4.5, 0, Math.PI * 2);
+        ctx.arc(5 + ex, -6, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(-3 + ex + facing, -6, 2, 0, Math.PI * 2);
+        ctx.arc(6 + ex + facing, -6, 2, 0, Math.PI * 2);
+        ctx.fill();
+        // Pestañas
+        ctx.strokeStyle = '#0c4a6e';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(-7 + ex, -10); ctx.lineTo(-9 + ex, -12);
+        ctx.moveTo(8 + ex, -10); ctx.lineTo(10 + ex, -12);
+        ctx.stroke();
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(ex + 1, 1, 3.5, 0.2 * Math.PI, 0.8 * Math.PI);
+        ctx.stroke();
+        // Rubor
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+        ctx.beginPath();
+        ctx.arc(-9 + ex, 0, 2.5, 0, Math.PI * 2);
+        ctx.arc(10 + ex, 0, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+  }
+
+  const fireboy = new Player(60, 440, '#f97316', 'fire');
+  const watergirl = new Player(860, 440, '#06b6d4', 'water');
+
+  function handleInputs() {
+    if (gameState !== 'PLAYING') return;
+    fireboy.vx = 0; watergirl.vx = 0;
+    if (keys['arrowleft']) fireboy.vx -= fireboy.speed;
+    if (keys['arrowright']) fireboy.vx += fireboy.speed;
+    if (keys['arrowup'] && fireboy.isGrounded) { fireboy.vy = fireboy.jumpForce; fireboy.isGrounded = false; }
+    if (keys['a']) watergirl.vx -= watergirl.speed;
+    if (keys['d']) watergirl.vx += watergirl.speed;
+    if (keys['w'] && watergirl.isGrounded) { watergirl.vy = watergirl.jumpForce; watergirl.isGrounded = false; }
+  }
+
+  // Carga de imágenes con "Examinar"
+  function setupInputs() {
+    const okExt = /\.(png|jpe?g|gif|webp|svg)$/i;
+    document.querySelectorAll('input[data-k]').forEach(input => {
+      input.accept = '.png,.jpg,.jpeg,.gif,.webp,.svg,image/png,image/jpeg,image/gif,image/webp,image/svg+xml';
+      input.addEventListener('change', e => {
+        const file = e.target.files[0]; if (!file) return;
+        const k = input.dataset.k, status = document.querySelector('[data-s="' + k + '"]');
+        if (!okExt.test(file.name)) {
+          status.textContent = 'Formato no válido'; status.className = 'text-[10px] font-bold mt-1 text-rose-400';
+          input.value = ''; return;
+        }
+        const isSvg = /\.svg$/i.test(file.name);
+        if (/\.gif$/i.test(file.name)) {
+          file.arrayBuffer().then(buf => {
+            const g = decodeGif(buf);
+            if (live[k]) { live[k].remove(); live[k] = null; }
+            tex[k] = g;
+            status.textContent = file.name.substring(0, 10) + '... (' + g.frames.length + ' cuadros)';
+            status.className = 'text-[10px] font-bold mt-1 ' + labelColor[k];
+          }).catch(() => {
+            status.textContent = 'GIF no válido'; status.className = 'text-[10px] font-bold mt-1 text-rose-400';
+          });
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const img = new Image();
+          img.onload = () => {
+            let src = img;
+            // SVG: se rasteriza (incluso sin tamaño propio) para que el canvas lo dibuje bien
+            if (isSvg || !img.naturalWidth) {
+              const w = img.naturalWidth || 512, h = img.naturalHeight || 512;
+              const s = Math.max(1, 512 / Math.max(w, h));
+              const c = document.createElement('canvas');
+              c.width = Math.round(w * s); c.height = Math.round(h * s);
+              c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+              src = c;
+            }
+            tex[k] = src;
+            if (live[k]) { live[k].remove(); live[k] = null; }
+            if (src === img) {
+              img.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1';
+              document.body.appendChild(img);
+              live[k] = img;
+            }
+            status.textContent = file.name.substring(0, 10) + '...';
+            status.className = 'text-[10px] font-bold mt-1 ' + labelColor[k];
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+    $('clearBtn').addEventListener('click', () => {
+      for (const k in tex) tex[k] = null;
+      for (const k in live) { if (live[k]) live[k].remove(); live[k] = null; }
+      for (const k in pat) pat[k] = null;
+      document.querySelectorAll('input[data-k]').forEach(i => i.value = '');
+      document.querySelectorAll('[data-s]').forEach(s => { s.textContent = 'Por defecto'; s.className = 'text-[10px] text-slate-400 mt-1'; });
+    });
+  }
+
+  function loadLevel(i) {
+    currentLevelIndex = i;
+    const L = levels[i];
+    fireboy.reset(L.spawn.fire.x, L.spawn.fire.y);
+    watergirl.reset(L.spawn.water.x, L.spawn.water.y);
+    L.doors.fire.reached = false; L.doors.water.reached = false;
+    for (const k in keys) keys[k] = false;
+    levelBadge.textContent = 'Nivel ' + (i + 1) + ' de ' + levels.length;
+    gameState = 'PLAYING';
+    gameOverlay.classList.add('hidden');
+  }
+
+  $('resetBtn').addEventListener('click', () => loadLevel(currentLevelIndex));
+  overlayBtn.addEventListener('click', () => {
+    if (gameState === 'WON') loadLevel(currentLevelIndex + 1 < levels.length ? currentLevelIndex + 1 : 0);
+    else loadLevel(currentLevelIndex);
+  });
+
+  function triggerGameOver(msg) {
+    if (gameState !== 'PLAYING') return;
+    gameState = 'GAMEOVER';
+    overlayTitle.textContent = '¡DERROTA!';
+    overlayTitle.className = 'title-font text-4xl md:text-6xl text-rose-500 mb-2';
+    overlaySub.textContent = msg;
+    overlayBtn.textContent = 'Reintentar Nivel';
+    gameOverlay.classList.remove('hidden');
+  }
+
+  function checkHazards() {
+    for (const p of levels[currentLevelIndex].pools) {
+      const box = { x: p.x + 5, y: p.y + 4, width: p.width - 10, height: p.height };
+      if (p.type === 'fire' && overlap(watergirl, box)) triggerGameOver('¡Chica Agua se evaporó en el fuego!');
+      if (p.type === 'water' && overlap(fireboy, box)) triggerGameOver('¡Chico Fuego se apagó en el agua!');
+      if (p.type === 'acid') {
+        if (overlap(fireboy, box)) triggerGameOver('¡Chico Fuego cayó en el ácido verde!');
+        if (overlap(watergirl, box)) triggerGameOver('¡Chica Agua cayó en el ácido verde!');
+      }
+    }
+  }
+
+  function checkDoors() {
+    const d = levels[currentLevelIndex].doors;
+    d.fire.reached = overlap(fireboy, d.fire);
+    d.water.reached = overlap(watergirl, d.water);
+    if (d.fire.reached && d.water.reached && gameState === 'PLAYING') {
+      gameState = 'WON';
+      const last = currentLevelIndex + 1 >= levels.length;
+      overlayTitle.textContent = last ? '¡VICTORIA TOTAL!' : '¡NIVEL COMPLETADO!';
+      overlayTitle.className = 'title-font text-4xl md:text-6xl mb-2 ' + (last ? 'text-emerald-400' : 'text-amber-400');
+      overlaySub.textContent = last ? '¡Felicidades! Superaron todos los niveles.' : '¡Ambos elementos llegaron a salvo!';
+      overlayBtn.textContent = last ? 'Volver al Nivel 1' : 'Siguiente Nivel';
+      gameOverlay.classList.remove('hidden');
+    }
+  }
+
+  // Plataformas estilo caricatura: pasto, tierra con piedritas y raíces colgantes
+  const hash = n => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+  function drawPlatform(p, idx) {
+    const x = p.x, y = p.y, w = p.width, h = p.height, gh = Math.min(10, h * 0.45);
+    const seed = idx * 17 + p.x * 0.31 + p.y * 0.13;
+    const isFloor = y + h >= canvas.height - 1;
+    ctx.save();
+    if (!isFloor && w >= 100) { // raíces colgantes
+      ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      for (let k = 0; k < 3; k++) {
+        const rx = x + w * (0.2 + 0.3 * k) + hash(seed + k) * 20, len = 22 + hash(seed + k * 3) * 22;
+        ctx.beginPath(); ctx.moveTo(rx, y + h - 2);
+        ctx.bezierCurveTo(rx - 10, y + h + len * 0.4, rx + 12, y + h + len * 0.7, rx + 2, y + h + len);
+        ctx.stroke();
+      }
+    }
+    // tierra
+    const g = ctx.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, '#8a5530'); g.addColorStop(1, '#4a2a17');
+    ctx.fillStyle = g; ctx.strokeStyle = '#3a2112'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(x, y + 3, w, h - 3, [0, 0, 12, 12]); ctx.fill(); ctx.stroke();
+    ctx.save(); ctx.clip(); // piedritas
+    for (let k = 0; k < w / 26; k++) {
+      const sx = x + 8 + k * 26 + hash(seed + k * 5) * 12, sy = y + gh + 4 + hash(seed + k * 7) * Math.max(2, h - gh - 8);
+      ctx.fillStyle = k % 2 ? '#b98254' : '#3d2212';
+      ctx.beginPath(); ctx.ellipse(sx, sy, 3 + hash(seed + k) * 3, 2 + hash(seed + k * 2) * 2, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    // pasto con borde ondulado
+    const gg = ctx.createLinearGradient(0, y, 0, y + gh + 5);
+    gg.addColorStop(0, '#9be85a'); gg.addColorStop(1, '#3fa52b');
+    ctx.fillStyle = gg; ctx.strokeStyle = '#2b7a1f'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(x, y, w, gh, [6, 6, 0, 0]); ctx.fill();
+    for (let cx = x + 5; cx < x + w; cx += 10) { ctx.beginPath(); ctx.arc(cx, y + gh, 5, 0, Math.PI); ctx.fill(); ctx.stroke(); }
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x + 6, y + 2, w - 12, 2);
+    ctx.fillStyle = '#6fd04a'; // briznas
+    for (let bx = x + 12; bx < x + w - 8; bx += 26 + hash(bx) * 14) {
+      ctx.beginPath(); ctx.moveTo(bx - 3, y + 1); ctx.lineTo(bx, y - 4 - hash(bx + 1) * 3); ctx.lineTo(bx + 3, y + 1); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Puertas: arco de piedra con hoja de madera y emblema; brillan cuando el héroe llega
+  function drawDoor(d, type) {
+    const fire = type === 'fire', x = d.x, y = d.y, w = d.width, h = d.height, cx = x + w / 2, on = d.reached;
+    const glow = fire ? '#fb923c' : '#22d3ee';
+    ctx.save();
+    // marco de piedra
+    const r = w / 2 + 6, cy = y - 4 + r;
+    const sg = ctx.createLinearGradient(x - 6, 0, x + w + 6, 0);
+    sg.addColorStop(0, '#a8a29e'); sg.addColorStop(0.5, '#d6d3d1'); sg.addColorStop(1, '#78716c');
+    ctx.beginPath(); ctx.moveTo(x - 6, y + h); ctx.lineTo(x - 6, cy); ctx.arc(cx, cy, r, Math.PI, 0); ctx.lineTo(x + w + 6, y + h); ctx.closePath();
+    ctx.fillStyle = sg; ctx.strokeStyle = '#44403c'; ctx.lineWidth = 3; ctx.fill(); ctx.stroke();
+    // hoja de la puerta
+    const r2 = w / 2, cy2 = y + 2 + r2;
+    ctx.beginPath(); ctx.moveTo(x, y + h); ctx.lineTo(x, cy2); ctx.arc(cx, cy2, r2, Math.PI, 0); ctx.lineTo(x + w, y + h); ctx.closePath();
+    const dg = ctx.createLinearGradient(0, y, 0, y + h);
+    if (on) { dg.addColorStop(0, fire ? '#fde047' : '#e0f2fe'); dg.addColorStop(1, fire ? '#f97316' : '#06b6d4'); ctx.shadowColor = glow; ctx.shadowBlur = 24; }
+    else { dg.addColorStop(0, fire ? '#9a3412' : '#155e75'); dg.addColorStop(1, fire ? '#431407' : '#083344'); }
+    ctx.fillStyle = dg; ctx.fill(); ctx.shadowBlur = 0;
+    ctx.save(); ctx.clip();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 2;
+    for (let i = 1; i < 3; i++) { ctx.beginPath(); ctx.moveTo(x + i * w / 3, y); ctx.lineTo(x + i * w / 3, y + h); ctx.stroke(); }
+    ctx.restore();
+    ctx.strokeStyle = '#44403c'; ctx.lineWidth = 2; ctx.stroke();
+    // emblema de llama o gota
+    if (fire) {
+      // fuego con tres lenguas que se mueven
+      const tt = performance.now() / 1000, f1 = Math.sin(tt * 7) * 2, f2 = Math.cos(tt * 9) * 2.5, base = y + 60;
+      ctx.beginPath(); ctx.moveTo(cx, base);
+      ctx.bezierCurveTo(cx - 18, base - 2, cx - 20, base - 20, cx - 10, base - 32 + f1);
+      ctx.quadraticCurveTo(cx - 8, base - 22, cx - 4, base - 22);
+      ctx.quadraticCurveTo(cx - 6, base - 34, cx + 1, base - 43 + f2);
+      ctx.quadraticCurveTo(cx + 4, base - 30, cx + 6, base - 24);
+      ctx.quadraticCurveTo(cx + 10, base - 26, cx + 12, base - 31 - f1);
+      ctx.bezierCurveTo(cx + 22, base - 18, cx + 18, base - 2, cx, base);
+      ctx.fillStyle = on ? '#ffffff' : '#f97316'; ctx.fill();
+      ctx.strokeStyle = '#9a3412'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, base - 1);
+      ctx.bezierCurveTo(cx - 11, base - 3, cx - 11, base - 14, cx - 1, base - 27 + f2);
+      ctx.bezierCurveTo(cx + 11, base - 14, cx + 11, base - 3, cx, base - 1);
+      ctx.fillStyle = '#fde047'; ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx, base - 8, 3.5, 6, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff7ed'; ctx.fill();
+    } else {
+      ctx.fillStyle = on ? '#ffffff' : '#a5f3fc';
+      ctx.beginPath(); ctx.moveTo(cx, y + 22); ctx.bezierCurveTo(cx + 4, y + 32, cx + 12, y + 40, cx + 12, y + 48); ctx.arc(cx, y + 48, 12, 0, Math.PI); ctx.bezierCurveTo(cx - 12, y + 40, cx - 4, y + 32, cx, y + 22);
+      ctx.fill();
+    }
+    // manija y escalón
+    ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.arc(x + w - 8, y + 46, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#57534e'; ctx.fillRect(x - 10, y + h - 3, w + 20, 3);
+    ctx.restore();
+  }
+
+  // Albercas: hueco en la plataforma con bordes de piedra, líquido con olas y burbujas
+  const poolColors = { fire: ['#fde047', '#f97316', '#b91c1c'], water: ['#bae6fd', '#06b6d4', '#0369a1'], acid: ['#d9f99d', '#22c55e', '#166534'] };
+  function drawPool(p) {
+    const x = p.x, w = p.width, top = p.y + 10, now = performance.now() / 1000;
+    const t = res(p.type === 'fire' ? tex.fire : p.type === 'water' ? tex.water : null);
+    const col = poolColors[p.type];
+    const wy = i => top - 2 + Math.sin(i * 0.15 + now * 3) * 1.8;
+    // hueco
+    ctx.fillStyle = '#2d1a0e';
+    ctx.beginPath(); ctx.roundRect(x - 3, top - 4, w + 6, 19, [0, 0, 9, 9]); ctx.fill();
+    // líquido con olas
+    ctx.save();
+    ctx.beginPath(); ctx.roundRect(x, top - 4, w, 17, [0, 0, 7, 7]); ctx.clip();
+    const g = ctx.createLinearGradient(0, top - 4, 0, top + 13);
+    g.addColorStop(0, col[0]); g.addColorStop(0.35, col[1]); g.addColorStop(1, col[2]);
+    ctx.beginPath(); ctx.moveTo(x, top + 13); ctx.lineTo(x, wy(0));
+    for (let i = 0; i <= w; i += 4) ctx.lineTo(x + i, wy(i));
+    ctx.lineTo(x + w, top + 13); ctx.closePath();
+    ctx.fillStyle = g; ctx.fill();
+    if (t) { ctx.save(); ctx.clip(); for (let tx = x; tx < x + w; tx += 24) ctx.drawImage(t, tx, top - 4, 24, 24); ctx.restore(); }
+    ctx.beginPath(); ctx.moveTo(x, wy(0));
+    for (let i = 0; i <= w; i += 4) ctx.lineTo(x + i, wy(i));
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)'; // burbujas
+    for (let k = 0; k < Math.floor(w / 35); k++) {
+      const by = top + 10 - ((now * 14 + k * 9) % 14);
+      ctx.beginPath(); ctx.arc(x + 14 + k * 35, by, 1.5 + (k % 2), 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    if (p.type === 'fire') { // llamas sobre la superficie
+      ctx.fillStyle = '#fbbf24';
+      for (let k = 0; x + 8 + k * 14 < x + w - 4; k++) {
+        const fx = x + 8 + k * 14, fh = 5 + (Math.sin(now * 6 + k) + 1) * 3;
+        ctx.beginPath(); ctx.moveTo(fx - 4, top - 3); ctx.lineTo(fx, top - 3 - fh); ctx.lineTo(fx + 4, top - 3); ctx.fill();
+      }
+    }
+    // bordes de piedra
+    ctx.fillStyle = '#a8a29e'; ctx.strokeStyle = '#57534e'; ctx.lineWidth = 2;
+    for (const rx of [x - 7, x + w - 3]) { ctx.beginPath(); ctx.roundRect(rx, top - 6, 10, 14, 4); ctx.fill(); ctx.stroke(); }
+  }
+
+  function render() {
+    const L = levels[currentLevelIndex];
+    if (tex.bg) {
+      ctx.drawImage(res(tex.bg), 0, 0, canvas.width, canvas.height);
+    } else {
+      const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      g.addColorStop(0, '#0f172a'); g.addColorStop(1, '#1e293b');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    L.platforms.forEach(drawPlatform);
+    L.pools.forEach(drawPool);
+    drawDoor(L.doors.fire, 'fire'); drawDoor(L.doors.water, 'water');
+    fireboy.draw(ctx); watergirl.draw(ctx);
+  }
+
+  function gameLoop() {
+    handleInputs();
+    if (gameState === 'PLAYING') {
+      fireboy.update(); watergirl.update();
+      checkHazards(); checkDoors();
+    }
+    render();
+    requestAnimationFrame(gameLoop);
+  }
+
+  setupInputs();
+  loadLevel(0);
+  gameLoop();
+};
+</script>
+</body>
+</html>
